@@ -1,0 +1,10 @@
+braintrust
+openai
+wandb
+weave
+mlflow
+yfinance
+pandas
+numpy
+pydantic
+feedparser
