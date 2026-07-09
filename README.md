@@ -28,3 +28,12 @@ Excellent for model-centric workflows, but might not be ideal for agentic-centri
 Similar to [FractionalAI's implementation](https://www.fractional.ai/case-study/augmenting-intelligence-with-ai-powered-trend-discovery-for-a-pe-backed-intelligence-platform), the project will have an affirmative, negative, and judge agent. The first two agents will be prompted to inspect a particular stock ticker/company, and determine if the stock is good to purchase or sell for a given time frame. The judge agent will listen to the reasonings given by the first two agents, and finally consolidate a purchase plan for the stock.
 
 The agents' actions will all be recorded via the different observability tools mentioned in [Tools](##Tools).
+
+# Currently Working on:
+
+Model currently isn't returning the values expected. Working on applying Pydantic to enable mandated value output. Must work on the following:
+* generate all Pydantic models for tools
+* update all tool functions
+* update all agent files
+* update orchestrator to expect validated models
+* add automatic JSON validation before sending tool results
