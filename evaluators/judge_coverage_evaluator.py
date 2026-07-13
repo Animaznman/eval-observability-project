@@ -108,7 +108,7 @@ def judge_coverage_evaluator(
     # -----------------------------
     wandb.log(results)
 
-    log_event("judge_coverage_evaluation", results)
+    log_event(bt, "judge_coverage_evaluation", results)
 
     with start_run("judge-coverage-evaluator"):
         mlflow.log_param("ticker", ticker)

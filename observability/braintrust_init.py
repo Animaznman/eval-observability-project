@@ -4,30 +4,20 @@ import braintrust
 
 def init_braintrust(project_name: str = "agentic-finance-system"):
     """
-    Initialize Braintrust for evaluation and structured logging.
-    This enables:
-    - event logging
-    - evaluator scoring (later)
-    - run metadata tracking
+    Initialize Braintrust logger for structured evaluation logging.
+    Returns a logger object that agents can use.
     """
-
-    bt = braintrust.init(
+    logger = braintrust.init_logger(
         project=project_name,
-        # You can add dataset or run metadata here later
     )
+    return logger
 
-    return bt
 
-
-# Convenience wrapper for logging events
-def log_event(event_name: str, metadata: dict):
+def log_event(logger, event_name: str, metadata: dict):
     """
-    Log an event to Braintrust.
-    Used by agents to record:
-    - inputs
-    - outputs
-    - reasoning summaries
-    - tool usage summaries
+    Log an event to Braintrust using the logger object.
     """
-
-    braintrust.log_event(event_name, metadata)
+    logger.log(
+        input={"event": event_name},
+        output=metadata,
+    )

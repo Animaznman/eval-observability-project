@@ -170,7 +170,7 @@ def negative_agent(ticker: str, date: str, interval: int):
         "negative_output": final_output
     })
 
-    log_event("negative_agent_run", {
+    log_event(bt, "negative_agent_run", {
         "ticker": ticker,
         "date": date,
         "interval": interval,

@@ -121,7 +121,7 @@ def market_grounding_evaluator(
     # -----------------------------
     wandb.log(results)
 
-    log_event("market_grounding_evaluation", results)
+    log_event(bt, "market_grounding_evaluation", results)
 
     with start_run("market-grounding-evaluator"):
         mlflow.log_param("ticker", ticker)

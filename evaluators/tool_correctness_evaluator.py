@@ -112,7 +112,7 @@ def tool_correctness_evaluator(
     # -----------------------------
     wandb.log(results)
 
-    log_event("tool_correctness_evaluation", results)
+    log_event(bt, "tool_correctness_evaluation", results)
 
     with start_run("tool-correctness-evaluator"):
         mlflow.log_param("ticker", ticker)

@@ -141,7 +141,7 @@ def structural_quality_evaluator(
     # -----------------------------
     wandb.log(results)
 
-    log_event("structural_quality_evaluation", results)
+    log_event(bt, "structural_quality_evaluation", results)
 
     with start_run("structural-quality-evaluator"):
         mlflow.log_param("ticker", ticker)

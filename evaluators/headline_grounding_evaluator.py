@@ -130,7 +130,7 @@ def headline_grounding_evaluator(
     # -----------------------------
     wandb.log(results)
 
-    log_event("headline_grounding_evaluation", results)
+    log_event(bt, "headline_grounding_evaluation", results)
 
     with start_run("headline-grounding-evaluator"):
         mlflow.log_param("ticker", ticker)

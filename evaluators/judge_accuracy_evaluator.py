@@ -53,8 +53,10 @@ def compute_return(ticker: str, start_date: str, interval_days: int):
     if df.empty:
         return None  # no data available
 
-    first_price = df["Close"].iloc[0]
-    last_price = df["Close"].iloc[-1]
+    df.columns = [col[0] if isinstance(col, tuple) else col for col in df.columns]
+
+    first_price = float(df["Close"].iloc[0])
+    last_price = float(df["Close"].iloc[-1])
 
     return (last_price - first_price) / first_price
 
@@ -102,7 +104,7 @@ def judge_accuracy_evaluator(
         }
 
         wandb.log(results)
-        log_event("judge_accuracy_evaluation", results)
+        log_event(bt, "judge_accuracy_evaluation", results)
 
         with start_run("judge-accuracy-evaluator"):
             mlflow.log_param("ticker", ticker)
@@ -172,7 +174,7 @@ def judge_accuracy_evaluator(
     # -----------------------------
     wandb.log(results)
 
-    log_event("judge_accuracy_evaluation", results)
+    log_event(bt, "judge_accuracy_evaluation", results)
 
     with start_run("judge-accuracy-evaluator"):
         mlflow.log_param("ticker", ticker)

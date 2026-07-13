@@ -83,7 +83,7 @@ def judge_agent(
         "negative_input": negative_output,
     })
 
-    log_event("judge_agent_run", {
+    log_event(bt, "judge_agent_run", {
         "ticker": ticker,
         "date": date,
         "interval": interval,

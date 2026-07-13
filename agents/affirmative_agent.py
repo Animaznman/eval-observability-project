@@ -172,7 +172,7 @@ def affirmative_agent(ticker: str, date: str, interval: int):
         "affirmative_output": final_output
     })
 
-    log_event("affirmative_agent_run", {
+    log_event(bt, "affirmative_agent_run", {
         "ticker": ticker,
         "date": date,
         "interval": interval,

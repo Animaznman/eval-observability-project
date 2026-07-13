@@ -61,7 +61,7 @@ def token_efficiency_evaluator(
     # -----------------------------
     wandb.log(results)
 
-    log_event("token_efficiency_evaluation", results)
+    log_event(bt, "token_efficiency_evaluation", results)
 
     with start_run("token-efficiency-evaluator"):
         mlflow.log_param("ticker", ticker)
