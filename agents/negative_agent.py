@@ -1,4 +1,4 @@
-# agents/affirmative_agent.py
+# agents/negative_agent.py
 # observability tools
 from observability.wandb_init import init_wandb
 from observability.braintrust_init import init_braintrust, log_event
@@ -26,17 +26,17 @@ from tools.tools import (
 )
 
 # Observability tools initiated
-wandb = init_wandb("affirmative-agent")
-bt = init_braintrust("affirmative-agent")
-mlflow = init_mlflow("affirmative-agent")
+wandb = init_wandb("negative-agent")
+bt = init_braintrust("negative-agent")
+mlflow = init_mlflow("negative-agent")
 
-def affirmative_agent(ticker: str, date: str, interval: int):
+def negative_agent(ticker: str, date: str, interval: int):
     """
-    Affirmative agent:
+    Negative agent:
     - Given a stock ticker, retrieve company metadata
     - Retrieve 3 months of historical price data
     - Retrieve relevant news headlines within a date range
-    - Summarize why one might buy the stock for a 3-month investment
+    - Summarize why one might *avoid buying* the stock for a 3-month investment
     - Include explicit observations listing which headlines were used
     """
 
@@ -55,14 +55,14 @@ def affirmative_agent(ticker: str, date: str, interval: int):
             {
                 "role": "system",
                 "content": (
-                    "You are the Affirmative Investment Analyst.\n"
-                    "Your job is to argue *why someone should buy this stock for a 3-month investment horizon*.\n"
+                    "You are the Negative Investment Analyst.\n"
+                    "Your job is to argue *why someone should NOT buy this stock for a 3-month investment horizon*.\n"
                     "You must:\n"
                     "- Retrieve company metadata\n"
                     "- Retrieve 3 months of historical price data\n"
                     "- Retrieve relevant news headlines\n"
                     "- Summarize market trends and news trends\n"
-                    "- Produce bullet-point reasons to buy\n"
+                    "- Produce bullet-point reasons to avoid buying\n"
                     "- Include an 'Observations' section listing the headlines used\n"
                     "Do NOT give financial advice. You are only summarizing signals."
                 ),
@@ -79,19 +79,18 @@ def affirmative_agent(ticker: str, date: str, interval: int):
     )
 
     # -----------------------------
-    # Step 2 — Handle tool calls (Pydantic input models)
+    # Step 2 — Handle tool calls
     # -----------------------------
     messages = [
         {
             "role": "system",
-            "content": "You are the Affirmative Investment Analyst.",
+            "content": "You are the Negative Investment Analyst.",
         },
         response.choices[0].message
     ]
 
     tool_calls = response.choices[0].message.tool_calls
-    # print("Tool Calls:")
-    # print(tool_calls)
+
     if tool_calls:
         for tool_call in tool_calls:
             fn_name = tool_call.function.name
@@ -138,7 +137,6 @@ def affirmative_agent(ticker: str, date: str, interval: int):
         # No tool calls at all — do NOT add any tool messages
         pass
 
-
     # -----------------------------
     # Step 3 — Ask the model to produce the final summary
     # -----------------------------
@@ -152,7 +150,7 @@ def affirmative_agent(ticker: str, date: str, interval: int):
                     "Using the tool results above, produce:\n"
                     "- A bullet-point summary of market trends\n"
                     "- A bullet-point summary of news trends\n"
-                    "- A bullet-point list of reasons someone might buy this stock for a 3-month horizon\n"
+                    "- A bullet-point list of reasons someone might avoid buying this stock for a 3-month horizon\n"
                     "- An 'Observations' section listing the headlines you used\n"
                     "Do NOT give financial advice. Only summarize signals."
                 ),
@@ -169,21 +167,21 @@ def affirmative_agent(ticker: str, date: str, interval: int):
         "ticker": ticker,
         "date": date,
         "interval": interval,
-        "affirmative_output": final_output
+        "negative_output": final_output
     })
 
-    log_event("affirmative_agent_run", {
+    log_event("negative_agent_run", {
         "ticker": ticker,
         "date": date,
         "interval": interval,
         "output": final_output,
     })
 
-    with start_run("affirmative-agent"):
+    with start_run("negative-agent"):
         mlflow.log_param("ticker", ticker)
         mlflow.log_param("date", date)
         mlflow.log_param("interval", interval)
-        mlflow.log_text(final_output, "affirmative_output.txt")
+        mlflow.log_text(final_output, "negative_output.txt")
 
     return {
         "output": final_output,

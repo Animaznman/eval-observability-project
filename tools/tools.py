@@ -1,8 +1,89 @@
 import yfinance as yf
+from pydantic import BaseModel, Field
+from typing import List
 
-def fetch_historical_prices(symbol: str, start: str):
-    data = yf.download(symbol, period="3mo", interval="1d", start=start)
-    return data.reset_index().to_dict(orient="records")
+class FetchHistoricalPricesParams(BaseModel):
+    symbol: str = Field(..., description="Stock ticker symbol, e.g. 'AAPL'")
+    start: str = Field(
+        ...,
+        description="Start date in 'YYYY-MM-DD' format from which to fetch 3 months of daily data",
+    )
+
+class FetchHeadlinesParams(BaseModel):
+    query: str = Field(..., description="Search term for Google News RSS")
+    date: str = Field(
+        ...,
+        description="Starting date in 'YYYY-MM-DD' format for the news search window",
+    )
+    interval: int = Field(
+        ...,
+        description="Number of days after 'date' to include in the search window",
+    )
+
+class FetchCompanyNameParams(BaseModel):
+    ticker: str = Field(..., description="Stock ticker symbol, e.g. 'MSFT'")
+
+class HistoricalPrice(BaseModel):
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: float
+
+class HistoricalPriceResult(BaseModel):
+    prices: List[HistoricalPrice]
+
+class Headline(BaseModel):
+    title: str
+    url: str
+    snippet: str
+    date: str   # ISO date string
+
+class HeadlineSearchResult(BaseModel):
+    query: str
+    start_date: str
+    end_date: str
+    count: int
+    results: List[Headline]
+
+class CompanyInfo(BaseModel):
+    ticker: str
+    company_name: str | None
+    sector: str | None
+    industry: str | None
+    website: str | None
+    country: str | None
+
+def fetch_historical_prices(args: FetchHistoricalPricesParams) -> HistoricalPriceResult:
+    df = yf.download(
+        args.symbol,
+        period="3mo",
+        interval="1d",
+        start=args.start
+    )
+
+    # Step 1 — Reset index so Date becomes a column
+    df = df.reset_index()
+
+    # Step 2 — Flatten MultiIndex columns (e.g., ('Close','GOOG') → 'Close')
+    df.columns = [col[0] if isinstance(col, tuple) else col for col in df.columns]
+
+    records = []
+    for row in df.itertuples(index=False):
+        records.append(
+            HistoricalPrice(
+                date=str(row.Date),
+                open=float(row.Open),
+                high=float(row.High),
+                low=float(row.Low),
+                close=float(row.Close),
+                volume=float(row.Volume),
+            )
+        )
+
+    return HistoricalPriceResult(prices=records)
+
 
 historical_price_tool = {
     "type": "function",
@@ -20,11 +101,10 @@ historical_price_tool = {
     }
 }
 
-
 import feedparser
 from datetime import datetime, timedelta
 
-def fetch_headlines(query: str, date: str, interval: int):
+def fetch_headlines(args: FetchHeadlinesParams) -> HeadlineSearchResult:
     """
     Fetch historical news headlines using Google News RSS.
     - query: search term
@@ -34,44 +114,51 @@ def fetch_headlines(query: str, date: str, interval: int):
 
     # Validate date
     try:
-        start_date = datetime.strptime(date, "%Y-%m-%d").date()
+        start_date = datetime.strptime(args.date, "%Y-%m-%d").date()
     except ValueError:
-        return {"error": "Date must be YYYY-MM-DD"}
+        # Return a Pydantic model with zero results instead of a raw dict
+        return HeadlineSearchResult(
+            query=args.query,
+            start_date=args.date,
+            end_date=args.date,
+            count=0,
+            results=[]
+        )
 
-    end_date = start_date + timedelta(days=interval)
+    end_date = start_date + timedelta(days=args.interval)
 
     # Build Google News RSS query
     rss_url = (
         "https://news.google.com/rss/search?"
-        f"q={query}+after:{start_date}+before:{end_date}"
+        f"q={args.query}+after:{start_date}+before:{end_date}"
     )
 
     feed = feedparser.parse(rss_url)
 
-    results = []
+    headlines = []
     for entry in feed.entries:
-        # Google News RSS returns published date in RFC822 format
         try:
             published = datetime(*entry.published_parsed[:6]).date()
         except Exception:
             continue
 
         if start_date <= published <= end_date:
-            results.append({
-                "title": entry.title,
-                "url": entry.link,
-                "snippet": entry.summary,
-                "date": published.isoformat(),
-            })
+            headlines.append(
+                Headline(
+                    title=entry.title,
+                    url=entry.link,
+                    snippet=entry.summary,
+                    date=published.isoformat(),
+                )
+            )
 
-    return {
-        "query": query,
-        "start_date": start_date.isoformat(),
-        "end_date": end_date.isoformat(),
-        "count": len(results),
-        "results": results,
-    }
-
+    return HeadlineSearchResult(
+        query=args.query,
+        start_date=start_date.isoformat(),
+        end_date=end_date.isoformat(),
+        count=len(headlines),
+        results=headlines,
+    )
 
 headline_search_tool = {
     "type": "function",
@@ -92,26 +179,33 @@ headline_search_tool = {
 
 import yfinance as yf
 
-def fetch_company_name(ticker: str):
+def fetch_company_name(args: FetchCompanyNameParams) -> CompanyInfo:
     """
     Given a stock ticker, return the associated company's name and metadata.
     Uses Yahoo Finance (free, stable).
     """
 
     try:
-        info = yf.Ticker(ticker).info
+        info = yf.Ticker(args.ticker).info
     except Exception as e:
-        return {"error": f"Unable to retrieve company info: {str(e)}"}
+        # Return a valid Pydantic model even on error
+        return CompanyInfo(
+            ticker=args.ticker,
+            company_name=None,
+            sector=None,
+            industry=None,
+            website=None,
+            country=None,
+        )
 
-    return {
-        "ticker": ticker,
-        "company_name": info.get("longName") or info.get("shortName"),
-        "sector": info.get("sector"),
-        "industry": info.get("industry"),
-        "website": info.get("website"),
-        "country": info.get("country"),
-    }
-
+    return CompanyInfo(
+        ticker=args.ticker,
+        company_name=info.get("longName") or info.get("shortName"),
+        sector=info.get("sector"),
+        industry=info.get("industry"),
+        website=info.get("website"),
+        country=info.get("country"),
+    )
 
 company_lookup_tool = {
     "type": "function",
